@@ -1,0 +1,17 @@
+# Model files
+*.pt
+*.pth
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+
+# Output directories
+segmentation_output/
+dan_binarized/
+dan_spacing_output/
+voronoi_outputs/
+colorwheel_output/
+colorwheel_temp/
