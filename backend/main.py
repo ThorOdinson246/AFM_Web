@@ -430,25 +430,35 @@ async def analyze_image(file: UploadFile = File(...)):
                 )
 
                 stem = Path(dots_mask_path).stem
-                extra1_path, extra2_path = pick_best_voronoi_images(vor_dir, stem)
+                voronoi_overlay, morphology_map, snapshot, original = pick_best_voronoi_images(vor_dir, stem)
                 
                 extra_outputs = [
                     {
                         "image": image_path_to_base64(dots_mask_path),
                         "title": f"Extracted Dots ({dot_extraction_stats['kept_features']} features)",
                         "description": f"Filtered from {dot_extraction_stats['total_features']} total features"
-                    },
-                    {
-                        "image": image_path_to_base64(extra1_path),
-                        "title": "Voronoi Tessellation",
-                        "description": "Voronoi analysis on extracted dots"
-                    },
-                    {
-                        "image": image_path_to_base64(extra2_path),
-                        "title": "Voronoi Statistics",
-                        "description": "Distribution of cell areas and morphology"
                     }
                 ]
+                
+                # Add all available voronoi output images
+                if voronoi_overlay:
+                    extra_outputs.append({
+                        "image": image_path_to_base64(voronoi_overlay),
+                        "title": "Voronoi Tessellation",
+                        "description": "Voronoi cells overlaid on detected features"
+                    })
+                if morphology_map:
+                    extra_outputs.append({
+                        "image": image_path_to_base64(morphology_map),
+                        "title": "Morphology Map",
+                        "description": "Color-coded morphology analysis"
+                    })
+                if snapshot:
+                    extra_outputs.append({
+                        "image": image_path_to_base64(snapshot),
+                        "title": "Analysis Snapshot",
+                        "description": "Intermediate analysis visualization"
+                    })
 
                 if results:
                     analysis_details = {k: (float(v) if isinstance(v, (int, float, np.floating, np.integer)) else str(v)) 
