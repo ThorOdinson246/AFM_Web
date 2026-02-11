@@ -13,6 +13,7 @@ import {
 import { UploadZone } from '@/components/UploadZone';
 import { ImageViewer } from '@/components/ImageViewer';
 import { ClassificationBadge } from '@/components/ClassificationBadge';
+import { ProbabilityChart } from '@/components/ProbabilityChart';
 import { AnalysisMetricsChart } from '@/components/AnalysisMetricsChart';
 import { AnalysisDetails } from '@/components/AnalysisDetails';
 import { 
@@ -164,11 +165,33 @@ export default function Home() {
                     </div>
                     <span className="text-xs text-gray-400 font-mono">Job: {result.job_id}</span>
                   </div>
-                  <ClassificationBadge 
-                    className={result.predicted_class} 
-                    confidence={result.confidence}
-                    size="lg"
-                  />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <ClassificationBadge 
+                        className={result.predicted_class} 
+                        confidence={result.confidence}
+                        size="lg"
+                      />
+                      {/* Probabilities as text */}
+                      <div className="mt-3 pt-3 border-t border-gray-100">
+                        <p className="text-xs text-gray-500 mb-2">Class Probabilities:</p>
+                        <div className="grid grid-cols-2 gap-2">
+                          {Object.entries(result.probabilities).map(([cls, prob]) => (
+                            <div key={cls} className="text-xs">
+                              <span className="font-medium text-gray-700">{cls}:</span>{' '}
+                              <span className="text-gray-600">{(prob * 100).toFixed(1)}%</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="h-48">
+                      <ProbabilityChart 
+                        probabilities={result.probabilities}
+                        predictedClass={result.predicted_class}
+                      />
+                    </div>
+                  </div>
                 </div>
 
                 {/* Images Grid */}
@@ -184,6 +207,42 @@ export default function Home() {
                     title="U-Net Mask"
                   />
                 </div>
+
+                {/* Image Info */}
+                {result.image_info && (
+                  <div className="bg-white border border-gray-200 rounded-xl p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Activity className="w-5 h-5 text-gray-500" />
+                      <span className="text-sm font-medium text-gray-700">Image Information</span>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      <div className="bg-gray-50 rounded-lg p-3">
+                        <p className="text-xs text-gray-500 mb-1">Original Size</p>
+                        <p className="text-sm font-semibold text-gray-900">
+                          {result.image_info.original_width} × {result.image_info.original_height}
+                        </p>
+                      </div>
+                      <div className="bg-gray-50 rounded-lg p-3">
+                        <p className="text-xs text-gray-500 mb-1">CNN Input</p>
+                        <p className="text-sm font-semibold text-gray-900">
+                          {result.image_info.cnn_input_size} × {result.image_info.cnn_input_size}
+                        </p>
+                      </div>
+                      <div className="bg-gray-50 rounded-lg p-3">
+                        <p className="text-xs text-gray-500 mb-1">U-Net Input</p>
+                        <p className="text-sm font-semibold text-gray-900">
+                          {result.image_info.unet_input_size} × {result.image_info.unet_input_size}
+                        </p>
+                      </div>
+                      <div className="bg-gray-50 rounded-lg p-3">
+                        <p className="text-xs text-gray-500 mb-1">Resized</p>
+                        <p className="text-sm font-semibold text-gray-900">
+                          {result.image_info.will_resize_for_unet ? 'Yes' : 'No'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Dot Extraction Stats */}
                 {result.dot_extraction_stats && (
@@ -230,19 +289,46 @@ export default function Home() {
                   </div>
                 )}
 
-                {/* Analysis Details */}
-                {Object.keys(result.analysis_details).length > 0 && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <AnalysisMetricsChart 
-                      metrics={result.analysis_details}
-                      title={result.predicted_class === 'lines' ? 'Color Wheel Metrics' : 'Voronoi Metrics'}
-                    />
-                    <AnalysisDetails 
-                      details={result.analysis_details}
-                      title="Analysis Results"
-                    />
+                {/* Voronoi Stats (text) */}
+                {result.voronoi_stats && Object.keys(result.voronoi_stats).length > 0 && (
+                  <div className="bg-white border border-gray-200 rounded-xl p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <BarChart3 className="w-5 h-5 text-gray-500" />
+                      <span className="text-sm font-medium text-gray-700">Voronoi Statistics (Raw)</span>
+                    </div>
+                    <div className="bg-gray-50 rounded-lg p-3 overflow-auto max-h-48">
+                      <pre className="text-xs text-gray-700 whitespace-pre-wrap font-mono">
+                        {JSON.stringify(result.voronoi_stats, null, 2)}
+                      </pre>
+                    </div>
                   </div>
                 )}
+
+                {/* Analysis Details - Always show */}
+                <div className="bg-white border border-gray-200 rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <BarChart3 className="w-5 h-5 text-gray-500" />
+                    <span className="text-sm font-medium text-gray-700">
+                      {result.predicted_class === 'lines' ? 'Color Wheel Analysis Details' : 'Voronoi Analysis Details'}
+                    </span>
+                  </div>
+                  {Object.keys(result.analysis_details).length > 0 ? (
+                    <div className="space-y-3">
+                      {/* Metrics Chart if numeric values exist */}
+                      <AnalysisMetricsChart 
+                        metrics={result.analysis_details}
+                        title=""
+                      />
+                      {/* Text display */}
+                      <AnalysisDetails 
+                        details={result.analysis_details}
+                        title=""
+                      />
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-500">No analysis details available</p>
+                  )}
+                </div>
 
                 {/* Color Wheel Stats */}
                 {result.colorwheel_stats && (
@@ -273,6 +359,29 @@ export default function Home() {
                     </div>
                   </div>
                 )}
+
+                {/* Raw JSON Response (Debug) */}
+                <details className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                  <summary className="px-4 py-3 cursor-pointer hover:bg-gray-50 text-sm font-medium text-gray-700">
+                    Raw API Response (Debug)
+                  </summary>
+                  <div className="px-4 pb-4">
+                    <pre className="bg-gray-50 rounded-lg p-3 text-xs text-gray-700 overflow-auto max-h-96 font-mono">
+                      {JSON.stringify({
+                        job_id: result.job_id,
+                        predicted_class: result.predicted_class,
+                        confidence: result.confidence,
+                        probabilities: result.probabilities,
+                        image_info: result.image_info,
+                        dot_extraction_stats: result.dot_extraction_stats,
+                        voronoi_stats: result.voronoi_stats,
+                        colorwheel_stats: result.colorwheel_stats,
+                        analysis_details: result.analysis_details,
+                        extra_outputs_count: result.extra_outputs.length,
+                      }, null, 2)}
+                    </pre>
+                  </div>
+                </details>
               </>
             ) : (
               <div className="bg-white border border-gray-200 rounded-xl p-12 text-center">
