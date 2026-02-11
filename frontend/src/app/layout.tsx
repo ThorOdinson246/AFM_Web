@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import { ThemeProvider } from '@/contexts/ThemeContext';
 
 export const metadata: Metadata = {
   title: 'AFM Analysis Pipeline',
@@ -12,11 +13,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body className="min-h-screen bg-[#0f1419] text-[#e8edf4]">
-        <div className="grid-pattern min-h-screen">
+    <html lang="en" suppressHydrationWarning>
+      <body className="min-h-screen bg-white dark:bg-slate-900 text-gray-900 dark:text-gray-100 transition-colors">
+        <ThemeProvider>
           {children}
-        </div>
+        </ThemeProvider>
       </body>
     </html>
   );
